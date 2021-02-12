@@ -1,0 +1,29 @@
+KS Power_qickfix
+A Sea Block Config
+Angel's Addons = Storage Options
+Angel's Bio Processing
+Angel's Petrochemical Processing
+Angel's Refining
+Angel's Smelting
+Bob's Adjustable Inserters mod
+Bob's Assembling machines mod
+Bob's Electronics mod
+Bob's Enemies mod
+Bob's Functions Library mod
+Bob's Logistics mod
+Bob's Metals, Chemicals and Intermediates mod
+Bob's Mining mod
+Bob's Modules mod
+Bob's Ores mod
+Bob's Personal Equipment mod
+Bob's Power mod
+Bob's Revamp mod
+Bob's Technology mod
+Circuit Processing
+Explosive Excavation
+FNEI
+Landfill Painting
+ScienceCostTweaker Mod (mexmer)
+Sea Black
+Sea Block Pack
+Space Extension Mod
