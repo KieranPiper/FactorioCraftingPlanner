@@ -1,7 +1,8 @@
 import sqlite3
 from sqlite3 import Error
 from sqlite3.dbapi2 import IntegrityError
-from typing import Dict, List
+
+from typing import Dict, List, Tuple
 
 
 # region Machine Table
@@ -23,15 +24,35 @@ def create_machine_table(database: sqlite3.Connection, override_existing: bool =
             print(e)
 
     sql = """
-    CREATE TABLE Machines (
-        Machine_ID INTEGER PRIMARY KEY,
-        Machine_Name TEXT NOT NULL UNIQUE,
-        Craft_Speed REAL NOT NULL CHECK (Craft_Speed >= 0),
-        Module_Slots INTEGER NOT NULL CHECK (Module_Slots >= 0),
-        Max_Energy_Consumption_KW REAL NOT NULL,
-        Idle_Energy_Consumption_KW REAL NOT NULL DEFAULT 0,
-        Energy_Consumption_Type TEXT NOT NULL CHECK (Energy_Consumption_Type LIKE "Electric" OR "Fuel"),
-        Pollution_Per_Minute REAL NOT NULL
+    CREATE TABLE IF NOT EXISTS Machines (
+        Machine_ID
+            INTEGER
+            PRIMARY KEY
+            AUTOINCREMENT,
+        Machine_Crafting_Speed
+            REAL
+            NOT NULL
+            CHECK (Machine_Crafting_Speed >= 0),
+        Machine_Module_Slots 
+            INTEGER
+            NOT NULL
+            CHECK (Machine_Module_Slots >= 0) 
+            DEFAULT (0),
+        Machine_Max_Energy_Consumption_KW
+            REAL
+            NOT NULL
+            CHECK (Machine_Max_Energy_Consumption_KW >= 0) 
+            DEFAULT (0.0),
+        Machine_Idle_Energy_Consumption_KW
+            REAL
+            NOT NULL
+            CHECK (Machine_Idle_Energy_Consumption_KW >= 0) 
+            DEFAULT (0.0),
+        Machine_Energy_Type
+            TEXT
+            CHECK (Machine_Energy_Type LIKE ("Electric" OR "Item" OR "Liquid")) 
+            NOT NULL
+            DEFAULT Electric
         );
     """
     try:
@@ -138,6 +159,20 @@ def get_machine(database: sqlite3.Connection, id: int = None, machine_name: str 
                 })
         return machines
 
+def get_all_machines(database: sqlite3.Connection) -> List[Tuple[str, str or int or float]]:
+    """
+    Gets all the machines from the database.
+    
+    :param database: Connection object; The database to get all the machines from.
+    
+    
+    :return: List[Dict[str, str or int or float]]
+    """
+    cur = database.cursor()
+    cur.execute("SELECT * FROM Machines")
+    return cur.fetchall()
+    
+
 def update_machine(database: sqlite3.Connection, id: int = None, machine_name: str = None, prompt_user_on_multiple_match: bool = True, **new_values: Dict[str, str or int or float]):
     """
     Updates a machines information.
@@ -224,16 +259,36 @@ def create_recipe_table(database: sqlite3.Connection, override_existing: bool = 
         database.commit()
 
     sql = """
-    CREATE TABLE Recipes (
-        Recipe ID INTEGER PRIMARY KEY,
-        Recipe_Product TEXT NOT NULL,
-        Recipe_Requirements TEXT NOT NULL,
-        Recipe_Craft_Time REAL NOT NULL CHECK (Recipe_Craft_Time >= 0),
-        Recipe_Craft_Machine TEXT NOT NULL
-        );
+    CREATE TABLE IF NOT EXISTS Recipes (
+        Recipe_ID 
+            INTEGER
+            PRIMARY KEY
+            AUTOINCREMENT,
+        Recipe_Items_Used
+            TEXT
+            NOT NULL,
+        Recipe_Products
+            TEXT
+            NOT NULL,
+        Recipe_Craft_Time_Seconds
+            REAL
+            NOT NULL
+            CHECK (Recipe_Craft_Time_Seconds >= 0),
+        Recipe_Machine_Used
+            TEXT
+            NOT NULL,
+        Recipe_Modules_Allowed
+            TEXT
+            NOT NULL
+);
     """
-    database.cursor().execute(sql)
+    database.cursor().execute(sql) 
     database.commit()
+
+def add_recipe(database: sqlite3.Connection, product: List[Dict[str, str or float]], reqirements: List):...
+
+    # Check type of the following:
+    #   product (should be list)
 # endregion
 
 def _create_connection(file: str) -> sqlite3.Connection or None:
