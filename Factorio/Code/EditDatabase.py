@@ -13,6 +13,13 @@ def create_machine_table(database: sqlite3.Connection, override_existing: bool =
     :param override_existing: bool; whether or not to override an existing table.
     :return:
     """
+    _check_types([
+        {
+            "Argument Name": "database",
+            "Value Supplied": database,
+            "Type": sqlite3.Connection
+        }
+    ])
     if override_existing:
         drop_table = """
         DROP TABLE Machines;
@@ -66,8 +73,10 @@ def create_machine_table(database: sqlite3.Connection, override_existing: bool =
     except Error as e:
         print(e)
 
+
 def add_machine(database: sqlite3.Connection, machine_name: str, craft_speed: float, module_slots: int,
-                max_energy_consumption: float, idle_energy_consumption: float, energy_consumption_type: str, pollution: float):
+                max_energy_consumption: float, idle_energy_consumption: float, energy_consumption_type: str,
+                pollution: float):
     """
     Adds a machine to the database.
     :param database: Connection object; the database to add the machine to.
@@ -77,9 +86,47 @@ def add_machine(database: sqlite3.Connection, machine_name: str, craft_speed: fl
     :param max_energy_consumption: float; The power consumption of the machine in KW while active.
     :param idle_energy_consumption: float; The power consumption of the machine in KW while idle.
     :param energy_consumption_type: str; The type of energy consumed (Electric, Item, Liquid).
-    :param pollution: The pollution the machine outputs per minute while active.
+    :param pollution: float; The pollution the machine outputs per minute while active.
     :return:
     """
+    _check_types([
+        {
+            "Argument Name": "machine_name",
+            "Value Supplied": machine_name,
+            "Type": str
+        },
+        {
+            "Argument Name": "craft_speed",
+            "Value Supplied": craft_speed,
+            "Type": float
+        },
+        {
+            "Argument Name": "module_slots",
+            "Value Supplied": module_slots,
+            "Type": int
+        },
+        {
+            "Argument Name": "max_energy_consumption",
+            "Value Supplied": max_energy_consumption,
+            "Type": float
+        },
+        {
+            "Argument Name": "idle_energy_consumption",
+            "Value Supplied": idle_energy_consumption,
+            "Type": float
+        },
+        {
+            "Argument Name": "energy_consumption_type",
+            "Value Supplied": energy_consumption_type,
+            "Type": str
+        },
+        {
+            "Argument Name": "pollution",
+            "Value Supplied": pollution,
+            "Type": float
+        }
+    ])
+
     sql = """
     INSERT INTO Machines(
         Machine_Name,
@@ -93,35 +140,66 @@ def add_machine(database: sqlite3.Connection, machine_name: str, craft_speed: fl
     Values(?,?,?,?,?,?,?);
     """
     try:
-        database.cursor().execute(sql, (machine_name, craft_speed, module_slots, max_energy_consumption, idle_energy_consumption, energy_consumption_type.capitalize(), pollution))
+        database.cursor().execute(sql, (machine_name, craft_speed, module_slots, max_energy_consumption,
+                                        idle_energy_consumption, energy_consumption_type.capitalize(), pollution))
         database.commit()
     except Error as e:
         print(e)
     except IntegrityError as e:
         print(e)
 
-def get_machine(database: sqlite3.Connection, id: int = None, machine_name: str = None) -> List[Dict[str, str or float]]:
+
+def get_machine(database: sqlite3.Connection, machine_id: int = None, machine_name: str = None) -> \
+        List[Dict[str, str or float]]:
     """
     Gets a machine.
     
     :param database: Connection object; The database to search in.
-    :param id: int; The ID of the machine if known. Defaults to None.
+    :param machine_id: int; The ID of the machine if known. Defaults to None.
     :param machine_name: str; The name of the machine if known. Defaults to None.
     
     :return: Dict[str, str or float]
     """
-    if id is not None:
+    # region Check Types
+    _check_types([
+        {
+            "Argument Name": "database",
+            "Value Supplied": database,
+            "Type": sqlite3.Connection
+        }
+    ])
+    if machine_id is not None:
+        _check_types([
+            {
+                "Argument Name": "machine_id",
+                "Value Supplied": machine_id,
+                "Type": int
+            }
+        ])
+
+    if machine_name is not None:
+        _check_types([
+            {
+                "Argument Name": "machine_name",
+                "Value Supplied": machine_name,
+                "Type": str
+            }
+        ])
+    # endregion
+
+    if machine_id is not None:
         try:
             sql = f"""
             SELECT * 
             FROM Machines 
-            WHERE Machine_ID={id}
+            WHERE Machine_ID={machine_id}
             """
             cur = database.cursor()
             cur.execute(sql)
-            
-            row =  cur.fetchall()
-            machine_id, machine_name, crafting_speed, module_slots, max_energy, idle_energy, energy_consumption_type, pollution = row[0]
+
+            row = cur.fetchall()
+            machine_id, machine_name, crafting_speed, module_slots, max_energy, idle_energy, energy_consumption_type, \
+                pollution = row[0]
             return [{
                 "Machine_id": machine_id,
                 "Machine_Name": machine_name,
@@ -131,28 +209,28 @@ def get_machine(database: sqlite3.Connection, id: int = None, machine_name: str 
                 "Idle_Energy_Consumption": idle_energy,
                 "Energy_Consumption_Type": energy_consumption_type,
                 "Pollution": pollution
-                }]
+            }]
         except Error as e:
             print(e)
         except ValueError as e:
             print(e)
-            print(row)
-    
+
     if machine_name is not None:
         sql = f"""
         SELECT *
         FROM Machines
         WHERE Machine_Name LIKE "%{machine_name}%"
         """
-        
+
         cur = database.cursor()
         cur.execute(sql)
-        
+
         rows = cur.fetchall()
         machines = []
-        
+
         for row in rows:
-            machine_id, machine_name, crafting_speed, module_slots, max_energy, idle_energy, energy_consumption_type, pollution = row
+            machine_id, machine_name, crafting_speed, module_slots, max_energy, idle_energy, energy_consumption_type, \
+                pollution = row
             machines.append({
                 "Machine_id": machine_id,
                 "Machine_Name": machine_name,
@@ -162,8 +240,9 @@ def get_machine(database: sqlite3.Connection, id: int = None, machine_name: str 
                 "Idle_Energy_Consumption": idle_energy,
                 "Energy_Consumption_Type": energy_consumption_type,
                 "Pollution": pollution
-                })
+            })
         return machines
+
 
 def get_all_machines(database: sqlite3.Connection) -> List[Tuple[str, str or int or float]]:
     """
@@ -174,44 +253,85 @@ def get_all_machines(database: sqlite3.Connection) -> List[Tuple[str, str or int
     
     :return: List[Dict[str, str or int or float]]
     """
+    _check_types([
+        {
+            "Argument Name": "database",
+            "Value Supplied": database,
+            "Type": sqlite3.Connection
+        }
+    ])
+
     cur = database.cursor()
     cur.execute("SELECT * FROM Machines")
     return cur.fetchall()
-    
 
-def update_machine(database: sqlite3.Connection, id: int = None, machine_name: str = None, prompt_user_on_multiple_match: bool = True, **new_values: Dict[str, str or int or float]):
+
+def update_machine(database: sqlite3.Connection, machine_id: int = None, machine_name: str = None,
+                   prompt_user_on_multiple_match: bool = True, **new_values: Dict[str, str or int or float]):
     """
     Updates a machines information.
     
     :param database: Connection object; The database the machine is in.
-    :param id: int; The id of the machine if known. Defaults to None.
+    :param machine_id: int; The id of the machine if known. Defaults to None.
     :param machine_name: str; The machine name if known. If multiple machines with the name given arises, will prompt
     user to input the one they want. Defaults to None.
     :param prompt_user_on_multiple_match: bool; Whether or not to prompt users to input the machine they want if
     multiple machines with the same name given exists. Defaults to True.
     :param new_values: Dict[str, str or int or float]; The new values for the machine)
-    
-    
+
     :return:
     """
+    _check_types([
+        {
+            "Argument Name": "database",
+            "Value Given": database,
+            "Type": sqlite3.Connection
+        },
+        {
+            "Argument Name": "machine_id",
+            "Value Given": machine_id,
+            "Type": int
+        },
+        {
+            "Argument Name": "machine_name",
+            "Value Given": machine_name,
+            "Type": str
+        },
+        {
+            "Argument Name": "prompt_user_on_multiple_match",
+            "Value Given": prompt_user_on_multiple_match,
+            "Type": bool
+        },
+        {
+            "Argument Name": "new_values",
+            "Value Given": new_values,
+            "Type": dict
+        }
+    ])
+
     # First, assign machine the output of get_machine, then check it's length
-    if len(machine := get_machine(database, id=id, machine_name=machine_name)) > 1:
+    if len(machine := get_machine(database, machine_id=machine_id, machine_name=machine_name)) > 1:
         if prompt_user_on_multiple_match:
             for item in machine:
                 print(item)
-            
-            while ((machine_wanted := input("Please put the name of the machine you want to edit: ")) in ((item["Machine_Name"] for item in machine) or ["Exit", "Stop", "Quit"])):
+
+            while ((machine_wanted := input("Please put the name of the machine you want to edit: ")) in (
+                    (item["Machine_Name"] for item in machine) or ["Exit", "Stop", "Quit"])):
                 for item in machine:
                     if item["Machine_Name"] == machine_wanted:
                         machine_wanted = item
                 break
-        
+
         else:
             machine_wanted = machine[0]
-        
-    elif len(machine) == 1:  # This works due to the fact that the := operator assigns the machine variable to the output of get_machine.
+
+    elif len(machine) == 1:  # This works due to the fact that the := operator assigns the machine variable to the
+        # output of get_machine.
         machine_wanted = machine[0]
-    
+
+    else:
+        machine_wanted = None
+
     if machine_wanted is not None and new_values != {}:
         for key in new_values.keys():
             if key in machine_wanted.keys():
@@ -238,7 +358,8 @@ def update_machine(database: sqlite3.Connection, id: int = None, machine_name: s
                                         machine_wanted["Machine_id"]
                                         ))
         database.commit()
-        
+
+
 # endregion
 
 
@@ -250,6 +371,14 @@ def create_recipe_table(database: sqlite3.Connection, override_existing: bool = 
     :param override_existing: bool; Whether or not to override an existing table.
     :return:
     """
+    _check_types([
+        {
+            "Argument Name": "database",
+            "Value Supplied": database,
+            "Type": sqlite3.Connection
+        }
+    ])
+    
     if override_existing:
         drop_table = """
         DROP TABLE Recipes
@@ -280,10 +409,12 @@ def create_recipe_table(database: sqlite3.Connection, override_existing: bool = 
             NOT NULL
     );
     """
-    database.cursor().execute(sql) 
+    database.cursor().execute(sql)
     database.commit()
 
-def add_recipe(database: sqlite3.Connection, recipe_requirements: List[Dict[str, str]], recipe_products: List[Dict[str, str]], craft_time: float, machines: List[str], modules: List[str]):
+
+def add_recipe(database: sqlite3.Connection, recipe_requirements: List[Dict[str, str]],
+               recipe_products: List[Dict[str, str]], craft_time: float, machines: List[str], modules: List[str]):
     """
     Adds a recipe to the database.
     
@@ -296,6 +427,61 @@ def add_recipe(database: sqlite3.Connection, recipe_requirements: List[Dict[str,
     
     :returns:
     """
+
+    _check_types([
+        {
+            "Argument Name": "database",
+            "Value Supplied": database,
+            "Type": sqlite3.Connection
+        },
+        {
+            "Argument Name": "recipe_requirements",
+            "Value Supplied": recipe_requirements,
+            "Type": list
+        },
+        {
+            "Argument Name": "recipe_products",
+            "Value Supplied": recipe_products,
+            "Type": list
+        },
+        {
+            "Argument Name": "craft_time",
+            "Value Supplied": craft_time,
+            "Type": float
+        },
+        {
+            "Argument Name": "machines",
+            "Value Supplied": machines,
+            "Type": list
+        },
+        {
+            "Argument Name": "modules",
+            "Value Supplied": modules,
+            "Type": list
+        }])
+    _check_type_of_children([
+        {
+            "Argument Name": "recipe_requirements",
+            "Value Supplied": recipe_requirements,
+            "Type": dict
+        },
+        {
+            "Argument Name": "recipe_products",
+            "Value Supplied": recipe_products,
+            "Type": dict
+        },
+        {
+            "Argument Name": "machines",
+            "Value Supplied": machines,
+            "Type": str
+        },
+        {
+            "Argument Name": "modules",
+            "Value Supplied": modules,
+            "Type": str
+        }
+    ])
+    
     sql = """
     INSERT INTO Recipes (
         Recipe_Items_Used,
@@ -306,7 +492,7 @@ def add_recipe(database: sqlite3.Connection, recipe_requirements: List[Dict[str,
         )
     Values(?,?,?,?,?);
     """
-    
+
     try:
         database.cursor().execute(sql, (recipe_requirements, recipe_products, craft_time, machines, modules))
         database.commit()
@@ -315,8 +501,6 @@ def add_recipe(database: sqlite3.Connection, recipe_requirements: List[Dict[str,
     except IntegrityError as e:
         print(e)
 
-    # Check type of the following:
-    #   product (should be list)
 
 def get_all_recipes(database: sqlite3.Connection) -> Dict[str, str]:
     """
@@ -324,6 +508,8 @@ def get_all_recipes(database: sqlite3.Connection) -> Dict[str, str]:
     :param database: Connection object; The database.
     :return: Dict[str, ]
     """
+
+
 # endregion
 
 def _create_connection(file: str) -> sqlite3.Connection or None:
@@ -338,3 +524,18 @@ def _create_connection(file: str) -> sqlite3.Connection or None:
 
     except Error as e:
         return None
+
+
+def _check_types(arguments):
+    for arg in arguments:
+        if not isinstance(arg["Value Supplied"], arg["Type"]):
+            raise ValueError(
+                f"Argument {arg['Argument Name']} was expecting {arg['Type']}, got {type(arg['Value Supplied'])}.")
+
+
+def _check_type_of_children(arguments):
+    for arg in arguments:
+        for each in arg["Value Supplied"]:
+            if not isinstance(each, arg["Type"]):
+                raise ValueError(
+                    f"Value {each} given to {arg['Argument Name']} should be {arg['Type']}, not {type(each)}")
