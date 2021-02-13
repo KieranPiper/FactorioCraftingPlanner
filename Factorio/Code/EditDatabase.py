@@ -27,8 +27,7 @@ def create_machine_table(database: sqlite3.Connection, override_existing: bool =
     CREATE TABLE IF NOT EXISTS Machines (
         Machine_ID
             INTEGER
-            PRIMARY KEY
-            AUTOINCREMENT,
+            PRIMARY KEY,
         Machine_Name
             TEXT
             NOT NULL,
@@ -53,9 +52,9 @@ def create_machine_table(database: sqlite3.Connection, override_existing: bool =
             DEFAULT (0.0),
         Machine_Energy_Type
             TEXT
-            CHECK (Machine_Energy_Type LIKE ("Electric" OR "Item" OR "Liquid")) 
             NOT NULL
-            DEFAULT Electric,
+            DEFAULT Electric
+            CHECK (Machine_Energy_Type IN ("Electric", "Item", "Liquid")),
         Machine_Pollution_Per_Minute
             REAL
             NOT NULL
@@ -269,8 +268,7 @@ def create_recipe_table(database: sqlite3.Connection, override_existing: bool = 
     CREATE TABLE IF NOT EXISTS Recipes (
         Recipe_ID 
             INTEGER
-            PRIMARY KEY
-            AUTOINCREMENT,
+            PRIMARY KEY,
         Recipe_Items_Used
             TEXT
             NOT NULL,
@@ -287,12 +285,42 @@ def create_recipe_table(database: sqlite3.Connection, override_existing: bool = 
         Recipe_Modules_Allowed
             TEXT
             NOT NULL
-);
+    );
     """
     database.cursor().execute(sql) 
     database.commit()
 
-def add_recipe(database: sqlite3.Connection, product: List[Dict[str, str or float]], reqirements: List):...
+def add_recipe(database: sqlite3.Connection, recipe_requirements: List[Dict[str, str]], recipe_products: List[Dict[str, str]], craft_time: float, machines: List[str], modules: List[str]):
+    """
+    Adds a recipe to the database.
+    
+    :param database: Connection object; The database.
+    :param recipe_requirements: List[Dict[str, str or float]]; The requirements for the recipe. Dict: {"Name": Amount} 
+    :param recipe_products: List[Dict[str, str or float]]; The products made by the recipe. Dict: {"Name": Amount}
+    :param craft_time: float; The amount of time in seconds the recipe takes to craft.
+    :param machines: List[Dict[str, str]]; The machines which the recipe can be crafted in.
+    :param modules: List[str]; The modules which can be used in the recipe (Speed, Productivity, Efficiency).
+    
+    :returns:
+    """
+    sql = """
+    INSERT INTO Recipes (
+        Recipe_Items_Used,
+        Recipe_Products,
+        Recipe_Craft_Time_Seconds,
+        Recipe_Machine_Used,
+        Recipe_Modules_Allowed
+        )
+    Values(?,?,?,?,?);
+    """
+    
+    try:
+        database.cursor().execute(sql, (recipe_requirements, recipe_products, craft_time, machines, modules))
+        database.commit()
+    except Error as e:
+        print(e)
+    except IntegrityError as e:
+        print(e)
 
     # Check type of the following:
     #   product (should be list)
