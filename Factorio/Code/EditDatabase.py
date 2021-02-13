@@ -84,7 +84,7 @@ def add_machine(database: sqlite3.Connection, machine_name: str, craft_speed: fl
     sql = """
     INSERT INTO Machines(
         Machine_Name,
-        Machine_Craft_Speed,
+        Machine_Crafting_Speed,
         Machine_Module_Slots,
         Machine_Max_Energy_Consumption_KW,
         Machine_Idle_Energy_Consumption_KW,
@@ -221,12 +221,12 @@ def update_machine(database: sqlite3.Connection, id: int = None, machine_name: s
         sql = """
         UPDATE Machines
         SET Machine_Name = ?,
-            Craft_Speed = ?,
-            Module_Slots = ?,
-            Max_Energy_Consumption_KW = ?,
-            Idle_Energy_Consumption_KW = ?,
-            Energy_Consumption_Type = ?,
-            Pollution_Per_Minute = ?
+            Machine_Crafting_Speed = ?,
+            Machine_Module_Slots = ?,
+            Machine_Max_Energy_Consumption_KW = ?,
+            Machine_Idle_Energy_Consumption_KW = ?,
+            Machine_Energy_Type = ?,
+            Machine_Pollution_Per_Minute = ?
         Where Machine_ID = ?
         """
         database.cursor().execute(sql, (machine_wanted["Machine_Name"],
