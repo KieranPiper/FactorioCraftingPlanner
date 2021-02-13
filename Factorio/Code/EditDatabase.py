@@ -243,13 +243,6 @@ def update_machine(database: sqlite3.Connection, id: int = None, machine_name: s
 
 
 # region Recipes
-def get_all_recipes(database: sqlite3.Connection) -> Dict[str, str]:
-    """
-    Gets all the recipes from a database.
-    :param database: Connection object; The database.
-    :return: Dict[str, ]
-    """
-
 def create_recipe_table(database: sqlite3.Connection, override_existing: bool = False):
     """
     Creates a new table inside a database for recipes
@@ -268,7 +261,7 @@ def create_recipe_table(database: sqlite3.Connection, override_existing: bool = 
     CREATE TABLE IF NOT EXISTS Recipes (
         Recipe_ID 
             INTEGER
-            PRIMARY KEY,
+            PRIMARY KEY
         Recipe_Items_Used
             TEXT
             NOT NULL,
@@ -324,6 +317,13 @@ def add_recipe(database: sqlite3.Connection, recipe_requirements: List[Dict[str,
 
     # Check type of the following:
     #   product (should be list)
+
+def get_all_recipes(database: sqlite3.Connection) -> Dict[str, str]:
+    """
+    Gets all the recipes from a database.
+    :param database: Connection object; The database.
+    :return: Dict[str, ]
+    """
 # endregion
 
 def _create_connection(file: str) -> sqlite3.Connection or None:
