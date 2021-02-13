@@ -29,6 +29,9 @@ def create_machine_table(database: sqlite3.Connection, override_existing: bool =
             INTEGER
             PRIMARY KEY
             AUTOINCREMENT,
+        Machine_Name
+            TEXT
+            NOT NULL,
         Machine_Crafting_Speed
             REAL
             NOT NULL
@@ -52,7 +55,11 @@ def create_machine_table(database: sqlite3.Connection, override_existing: bool =
             TEXT
             CHECK (Machine_Energy_Type LIKE ("Electric" OR "Item" OR "Liquid")) 
             NOT NULL
-            DEFAULT Electric
+            DEFAULT Electric,
+        Machine_Pollution_Per_Minute
+            REAL
+            NOT NULL
+            CHECK (Machine_Pollution_Per_Minute >= 0)
         );
     """
     try:
