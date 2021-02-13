@@ -77,19 +77,19 @@ def add_machine(database: sqlite3.Connection, machine_name: str, craft_speed: fl
     :param module_slots: int; The number of modules which can be in the machine.
     :param max_energy_consumption: float; The power consumption of the machine in KW while active.
     :param idle_energy_consumption: float; The power consumption of the machine in KW while idle.
-    :param energy_consumption_type: str; The type of energy consumed (Electric, Fuel).
+    :param energy_consumption_type: str; The type of energy consumed (Electric, Item, Liquid).
     :param pollution: The pollution the machine outputs per minute while active.
     :return:
     """
     sql = """
     INSERT INTO Machines(
         Machine_Name,
-        Craft_Speed,
-        Module_Slots,
-        Max_Energy_Consumption_KW,
-        Idle_Energy_Consumption_KW,
-        Energy_Consumption_Type,
-        Pollution_Per_Minute
+        Machine_Craft_Speed,
+        Machine_Module_Slots,
+        Machine_Max_Energy_Consumption_KW,
+        Machine_Idle_Energy_Consumption_KW,
+        Machine_Energy_Type,
+        Machine_Pollution_per_Minute
         )
     Values(?,?,?,?,?,?,?);
     """
