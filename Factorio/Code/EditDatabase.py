@@ -199,7 +199,7 @@ def get_machine(database: sqlite3.Connection, machine_id: int = None, machine_na
 
             row = cur.fetchall()
             machine_id, machine_name, crafting_speed, module_slots, max_energy, idle_energy, energy_consumption_type, \
-                pollution = row[0]
+            pollution = row[0]
             return [{
                 "Machine_id": machine_id,
                 "Machine_Name": machine_name,
@@ -230,7 +230,7 @@ def get_machine(database: sqlite3.Connection, machine_id: int = None, machine_na
 
         for row in rows:
             machine_id, machine_name, crafting_speed, module_slots, max_energy, idle_energy, energy_consumption_type, \
-                pollution = row
+            pollution = row
             machines.append({
                 "Machine_id": machine_id,
                 "Machine_Name": machine_name,
@@ -281,46 +281,57 @@ def update_machine(database: sqlite3.Connection, machine_id: int = None, machine
 
     :return:
     """
+    # region Type Checks
     _check_types([
         {
             "Argument Name": "database",
-            "Value Given": database,
+            "Value Supplied": database,
             "Type": sqlite3.Connection
         },
         {
-            "Argument Name": "machine_id",
-            "Value Given": machine_id,
-            "Type": int
-        },
-        {
-            "Argument Name": "machine_name",
-            "Value Given": machine_name,
-            "Type": str
-        },
-        {
             "Argument Name": "prompt_user_on_multiple_match",
-            "Value Given": prompt_user_on_multiple_match,
+            "Value Supplied": prompt_user_on_multiple_match,
             "Type": bool
         },
         {
             "Argument Name": "new_values",
-            "Value Given": new_values,
+            "Value Supplied": new_values,
             "Type": dict
         }
     ])
 
+    if machine_id is not None:
+        _check_types([
+            {
+                "Argument Name": "machine_id",
+                "Value Supplied": machine_id,
+                "Type": int
+            }
+        ])
+    if machine_name is not None:
+        _check_types([
+            {
+                "Argument Name": "machine_name",
+                "Value Supplied": machine_name,
+                "Type": str
+            },
+        ])
+    # endregion
+    
     # First, assign machine the output of get_machine, then check it's length
     if len(machine := get_machine(database, machine_id=machine_id, machine_name=machine_name)) > 1:
         if prompt_user_on_multiple_match:
             for item in machine:
                 print(item)
 
-            while ((machine_wanted := input("Please put the name of the machine you want to edit: ")) in (
-                    (item["Machine_Name"] for item in machine) or ["Exit", "Stop", "Quit"])):
+            while ((machine_wanted := input("Please put the name of the machine you want to edit: ")) not in (
+                    ([item["Machine_Name"] for item in machine]) or ["Exit", "Stop", "Quit"])):
                 for item in machine:
-                    if item["Machine_Name"] == machine_wanted:
-                        machine_wanted = item
-                break
+                    print(item)
+            
+            for item in machine:
+                if item["Machine_Name"] == machine_wanted:
+                    machine_wanted = item
 
         else:
             machine_wanted = machine[0]
@@ -329,8 +340,8 @@ def update_machine(database: sqlite3.Connection, machine_id: int = None, machine
         # output of get_machine.
         machine_wanted = machine[0]
 
-    else:
-        machine_wanted = None
+    # else:
+    #     machine_wanted = None
 
     if machine_wanted is not None and new_values != {}:
         for key in new_values.keys():
@@ -370,6 +381,7 @@ def create_recipe_table(database: sqlite3.Connection, override_existing: bool = 
     :param database: Connection object; The database to add the table to.
     :param override_existing: bool; Whether or not to override an existing table.
     :return:
+
     """
     _check_types([
         {
@@ -378,7 +390,7 @@ def create_recipe_table(database: sqlite3.Connection, override_existing: bool = 
             "Type": sqlite3.Connection
         }
     ])
-    
+
     if override_existing:
         drop_table = """
         DROP TABLE Recipes
@@ -481,7 +493,7 @@ def add_recipe(database: sqlite3.Connection, recipe_requirements: List[Dict[str,
             "Type": str
         }
     ])
-    
+
     sql = """
     INSERT INTO Recipes (
         Recipe_Items_Used,
