@@ -388,6 +388,11 @@ def create_recipe_table(database: sqlite3.Connection, override_existing: bool = 
             "Argument Name": "database",
             "Value Supplied": database,
             "Type": sqlite3.Connection
+        },
+        {
+            "Argument Name": "override_existing",
+            "Value Supplied": override_existing,
+            "Type": bool
         }
     ])
 
@@ -440,6 +445,7 @@ def add_recipe(database: sqlite3.Connection, recipe_requirements: List[Dict[str,
     :returns:
     """
 
+    # region Type Check
     _check_types([
         {
             "Argument Name": "database",
@@ -493,6 +499,7 @@ def add_recipe(database: sqlite3.Connection, recipe_requirements: List[Dict[str,
             "Type": str
         }
     ])
+    # endregion
 
     sql = """
     INSERT INTO Recipes (
@@ -512,6 +519,124 @@ def add_recipe(database: sqlite3.Connection, recipe_requirements: List[Dict[str,
         print(e)
     except IntegrityError as e:
         print(e)
+
+
+def get_recipe(database: sqlite3.Connection, recipe_id: int = None, recipe_product: str = None) -> List[Dict[str, str or
+                                                                                                             float]]:
+    """
+    Gets a recipe.
+
+    :param database: Connection object; The database.
+    :param recipe_id: int; The id of the recipe, if known. Defaults to None.
+    :param recipe_product: str; The product which you are making. Defaults to None.
+
+    :return: List[Dict[str, str or float]].
+    """
+    # region Type Checks
+    _check_types([
+        {
+            "Argument Name": "database",
+            "Value Supplied": database,
+            "Type": sqlite3.Connection
+        }
+    ])
+
+    if recipe_id is not None:
+        _check_types([
+            {
+                "Argument Name": "recipe_id",
+                "Value Supplied": recipe_id,
+                "Type": int
+            }
+        ])
+
+    if recipe_product is not None:
+        _check_types([
+            {
+                "Argument Name": "recipe_product",
+                "Value Supplied": recipe_product,
+                "Type": str
+            }
+        ])
+    # endregion
+
+    if recipe_id is not None:
+        try:
+            sql = f"""
+            SELECT *
+            FROM Recipes
+            WHERE Recipe_ID={recipe_id}
+            """
+            cur = database.cursor()
+            cur.execute(sql)
+
+            recipe = cur.fetchall()[0]
+
+            recipe_id, recipe_items, recipe_products, recipe_craft_time, recipe_machines, recipe_modules = recipe
+
+            # TODO convert recipe_items, Recipe_products, Recipe_Machines into lists.
+            return [{
+                "Recipe_id": recipe_id,
+                "Recipe_Items": recipe_items,
+                "Recipe_Products": recipe_products,
+                "Recipe_Craft_Time": recipe_craft_time,
+                "Recipe_Machines": recipe_machines,
+                "Recipe_Modules_Allowed": recipe_modules
+            }]
+
+        except Error as e:
+            print(e)
+
+    if recipe_product is not None:
+        try:
+            cur = database.cursor()
+            product_sql = f"""
+            SELECT *
+            FROM Items
+            WHERE Item_Name={recipe_product}
+            """
+            cur.execute(product_sql)
+
+            product = cur.fetchall()
+            item_id, item_name, item_energy_value = product[0]
+
+            # As we are saving a list to the Recipe_Products column as TEXT, we cannot make a SQL statement which is
+            # 100% accurate.
+            recipe_sql = f"""
+            SELECT *
+            FROM Recipes
+            WHERE {item_name} in Recipe_Products;
+            """
+            cur.execute(recipe_sql)
+
+            recipes = cur.fetchall()
+
+            recipes_with_product = []
+            for recipe in recipes:
+                recipe_id, recipe_items, recipe_products, recipe_craft_time, recipe_machines, recipe_modules = recipe
+
+                # Convert the string form of the list to an actual list
+                recipe_product = _convert_str_to_list(recipe_product)
+
+                if item_name in recipe_product:
+
+                    # Convert the items, machines and modules to lists.
+                    recipe_items = _convert_str_to_list(recipe_items)
+                    recipe_machines = _convert_str_to_list(recipe_machines)
+                    recipe_modules = _convert_str_to_list(recipe_modules)
+
+                    recipes_with_product += {
+                        "Recipe_id": recipe_id,
+                        "Recipe_Items": recipe_items,
+                        "Recipe_Products": recipe_products,
+                        "Recipe_Craft_Time": recipe_craft_time,
+                        "Recipe_Machines": recipe_machines,
+                        "Recipe_Modules_Allowed": recipe_modules
+                    }
+            return recipes_with_product
+
+        except Error as e:
+            print(e)
 
 
 def get_all_recipes(database: sqlite3.Connection) -> Dict[str, str]:
@@ -551,3 +676,17 @@ def _check_type_of_children(arguments):
             if not isinstance(each, arg["Type"]):
                 raise ValueError(
                     f"Value {each} given to {arg['Argument Name']} should be {arg['Type']}, not {type(each)}")
+
+
+def _convert_str_to_list(string: str) -> List[str]:
+    """
+    Converts a str to a list.
+
+    :param string: str; The string to be converted.
+
+    :return: List[str]
+    """
+    string = string[1: len(string) - 1].split(",")
+    for x in range(len(string)):
+        string[x] = string[x].strip().strip("'")
+    return string
