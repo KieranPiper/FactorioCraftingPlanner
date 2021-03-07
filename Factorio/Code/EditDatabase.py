@@ -37,7 +37,8 @@ def create_machine_table(database: sqlite3.Connection, override_existing: bool =
             PRIMARY KEY,
         Machine_Name
             TEXT
-            NOT NULL,
+            NOT NULL
+            UNIQUE,
         Machine_Crafting_Speed
             REAL
             NOT NULL
@@ -407,7 +408,7 @@ def create_recipe_table(database: sqlite3.Connection, override_existing: bool = 
     CREATE TABLE IF NOT EXISTS Recipes (
         Recipe_ID 
             INTEGER
-            PRIMARY KEY
+            PRIMARY KEY,
         Recipe_Items_Used
             TEXT
             NOT NULL,
@@ -488,16 +489,16 @@ def add_recipe(database: sqlite3.Connection, recipe_requirements: List[Dict[str,
             "Value Supplied": recipe_products,
             "Type": dict
         },
-        {
-            "Argument Name": "machines",
-            "Value Supplied": machines,
-            "Type": str
-        },
-        {
-            "Argument Name": "modules",
-            "Value Supplied": modules,
-            "Type": str
-        }
+        # {
+        #     "Argument Name": "machines",
+        #     "Value Supplied": machines,
+        #     "Type": str
+        # },
+        # {
+        #     "Argument Name": "modules",
+        #     "Value Supplied": modules,
+        #     "Type": str
+        # }
     ])
     # endregion
 
@@ -513,7 +514,7 @@ def add_recipe(database: sqlite3.Connection, recipe_requirements: List[Dict[str,
     """
 
     try:
-        database.cursor().execute(sql, (recipe_requirements, recipe_products, craft_time, machines, modules))
+        database.cursor().execute(sql, (str(recipe_requirements), str(recipe_products), float(craft_time), str(machines), str(modules)))
         database.commit()
     except Error as e:
         print(e)
@@ -575,6 +576,12 @@ def get_recipe(database: sqlite3.Connection, recipe_id: int = None, recipe_produ
             recipe_id, recipe_items, recipe_products, recipe_craft_time, recipe_machines, recipe_modules = recipe
 
             # TODO convert recipe_items, Recipe_products, Recipe_Machines into lists.
+            
+            recipe_items = _convert_str_to_dict_list(recipe_items)
+            recipe_products = _convert_str_to_dict_list(recipe_products)
+            recipe_machines = _convert_str_to_list(recipe_machines)
+            recipe_modules = _convert_str_to_list(recipe_modules)
+            
             return [{
                 "Recipe_id": recipe_id,
                 "Recipe_Items": recipe_items,
@@ -615,6 +622,7 @@ def get_recipe(database: sqlite3.Connection, recipe_id: int = None, recipe_produ
             for recipe in recipes:
                 recipe_id, recipe_items, recipe_products, recipe_craft_time, recipe_machines, recipe_modules = recipe
 
+                # TODO rewrite this to convert everything needed into the dict form of lists
                 # Convert the string form of the list to an actual list
                 recipe_product = _convert_str_to_list(recipe_product)
 
@@ -645,8 +653,196 @@ def get_all_recipes(database: sqlite3.Connection) -> Dict[str, str]:
     :param database: Connection object; The database.
     :return: Dict[str, ]
     """
+# endregion
+
+# region Items
+def create_item_table(database : sqlite3.Connection, override_existing: bool = False):
+    """
+    Creates a new table inside a database for items.
+    
+    :param database: Connection Object; The database to add the table to.
+    :param override_existing: bool; Whether or not to override an existing table. Defaults to False.
+    
+    :returns:
+    """
+    _check_types([
+        {
+            "Argument Name": "database",
+            "Value Supplied": database,
+            "Type": sqlite3.Connection
+        },
+        {
+            "Argument Name": "override_existing",
+            "Value Supplied": override_existing,
+            "Type": bool
+        }
+    ])
+    
+    if override_existing:
+        database.cursor().execute("DROP TABLE Items")
+        database.commit()
+    
+    sql = """
+    CREATE TABLE Items (
+        Item_ID
+            INTEGER
+            PRIMARY KEY,
+        Item_Name
+            TEXT
+            NOT NULL
+            UNIQUE,
+        Item_Energy_Value_KW
+            REAL
+            CHECK (Item_Energy_Value_KW >= 0) 
+            NOT NULL
+            DEFAULT (0.0) 
+    );
+    """
+    database.cursor().execute(sql)
+    database.commit()
 
 
+def add_item(database: sqlite3.Connection, item_name: str, item_energy_value_KW: float = 0.0):
+    """
+    Adds an item to the database.
+    
+    :param database: Connection object; The database to add the item to.
+    :param item_name: str; The name of the item.
+    :param item_energy_value_KW: float; The amount of energy the item provides when burnt. Defaults to 0.0.
+    
+    :return:
+    """
+    _check_types([
+        {
+            "Argument Name": "item_name",
+            "Value Supplied": item_name,
+            "Type": str
+        },
+        {
+            "Argument Name": "item_energy_value_KW",
+            "Value Supplied": item_energy_value_KW,
+            "Type": float
+        }
+    ])
+    
+    sql = """
+    INSERT INTO Items(
+        Item_Name,
+        Item_Energy_Value_KW
+        )
+    Values(?,?)
+    """
+    try:
+        database.cursor().execute(sql, (item_name, item_energy_value_KW))
+        database.commit()
+    except Error as e:
+        print(e)
+    except IntegrityError as e:
+        print(e)
+
+
+def get_item(database: sqlite3.Connection, item_id: int = None, item_name: str = None) -> List[Dict[str, str or float]]:
+    """
+    Gets an item.
+    
+    :param database: Connection Object; The database to search in.
+    :param item_id: int; The ID of the item if known. Defaults to None.
+    :param item_name: str; The name of the machine if known. Defaults to None.
+    
+    :return: Dict[str, str or float]
+    """
+    # region Check Types
+    _check_types([
+        {
+            "Argument Name": "database",
+            "Value Supplied": database,
+            "Type": sqlite3.Connection
+        }
+    ])
+    
+    if item_id is not None:
+        _check_types([
+            {
+                "Argument Name": "item_id",
+                "Value Supplied": item_id,
+                "Type": int
+            }
+        ])
+    
+    if item_name is not None:
+        _check_types([
+            {
+                "Argument Name": "item_name",
+                "Value Supplied": item_name,
+                "Type": str
+            }
+        ])
+    # endregion
+    
+    if item_id is not None:
+        try:
+            sql = f"""
+            SELECT *
+            FROM Items
+            WHERE Item_ID={item_id}
+            """
+            cur = database.cursor()
+            cur.execute(sql)
+            
+            row = cur.fetchall()
+            item_id, item_name, item_energy_value = row[0]
+            return [{
+                "Item_id": item_id,
+                "Item_Name": item_name,
+                "Item_Energy_Value": item_energy_value    
+            }]
+        except Error as e:
+            print(e)
+        except ValueError as e:
+            print(e)
+    
+    if item_name is not None:
+        sql = f"""
+        SELECT *
+        FROM Items
+        WHERE Item_Name LIKE "%{item_name}%"
+        """
+        
+        cur = database.cursor()
+        cur.execute(sql)
+        
+        rows = cur.fetchall()
+        items = []
+        
+        for row in rows:
+            item_id, item_name, item_energy_value = row
+            items.append({
+                "Item_id": item_id,
+                "Item_Name": item_name,
+                "Item_Energy_Value": item_energy_value
+            })
+        return items
+
+
+def get_all_items(database: sqlite3.Connection) -> List[Tuple[str or int or float]]:
+    """
+    Gets all items from a database.
+    
+    :param database: Connection Object; The database to get all the items from.
+    
+    :return: List[Tuple[str or int or float]]
+    """
+    _check_types([
+        {
+            "Argument Name": "database",
+            "Value Supplied": database,
+            "Type": sqlite3.Connection
+        }
+    ])
+    
+    cur = database.cursor()
+    cur.execute("SELECT * FROM Items")
+    return cur.fetchall()
 # endregion
 
 def _create_connection(file: str) -> sqlite3.Connection or None:
@@ -690,3 +886,34 @@ def _convert_str_to_list(string: str) -> List[str]:
     for x in range(len(string)):
         string[x] = string[x].strip().strip("'")
     return string
+
+
+def _convert_str_to_dict_list(string: str) -> List[Dict]:
+    """
+    Converts a str to a list of dicts.
+    
+    :param str: str; The string to be converted.
+    
+    :return: List[Dict]
+    """
+    converted = []
+    
+    string = string[1: len(string) - 1].split("}")
+    string.pop()
+
+    
+    for x in range(len(string)):
+        converted.append({})
+        
+        string[x] = string[x].strip()
+        components = string[x].split(",")
+        
+        for y in range(len(components)):
+            key, value = components[y].strip().split(":")
+            
+            key = key.strip().strip("{").strip("'")
+            value = value.strip().strip("'")
+            
+            converted[x][key] = value
+    
+    return converted
