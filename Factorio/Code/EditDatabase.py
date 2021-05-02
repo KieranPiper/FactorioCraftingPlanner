@@ -988,7 +988,7 @@ def create_liquid_table(database: sqlite3.Connection, override_existing: bool = 
     database.commit()
 
 
-def add_liquid(database: sqlite3.Connection, liquid_name: str, liquid_temperature: float = 0.0):
+def add_liquid(database: sqlite3.Connection, liquid_name: str, liquid_temperature: float = 15.0):
     """
     Adds an liquid to the database.
     
