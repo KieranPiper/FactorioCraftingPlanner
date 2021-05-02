@@ -11,8 +11,8 @@ if __name__ == "__main__":
     # test.add_machine(database, "Assembling Machine 2", 0.75, 2, 150.0, 5.0, "Electric", 3.0)
     # print(test.get_all_machines(database))
     
-    # test.add_machine(database, "Stone Furnace", 1.0, 0, 90.0, 0.0, "Item", 2.0)
-    
+    # test.add_machine(database, "Electric Furnace", 2.0, 2, 180.0, 6.0, "Electric", 1.0)
+
     # test.add_item(database, "Iron Ore")
     # test.add_item(database, "Iron Plate")
     
@@ -29,13 +29,13 @@ if __name__ == "__main__":
     #     ["Stone Furnace"],
     #     []
     #                 )
-    test.get_recipe(database, recipe_id=1)
-    print(test.get_recipe(database, recipe_id=1))
-    # list_test = test._convert_str_to_dict_list(test.get_recipe(database, recipe_id=1)[0]["Recipe_Items"])
-    # print(list_test)
-    # print(list_test[0].keys())
-    
-    
+    # test.get_recipe(database, recipe_id=1)
+    # print(test.get_recipe(database, recipe_id=1))
+
+    # print(test.get_item(database, item_id=1))
+    # print(test.update_item(database, item_id=1, Item_Name="Iron Ore"))
+    # print(test.get_item(database, item_id=1))
+    #
     
     # test.get_all_recipes(database)
  

@@ -200,7 +200,8 @@ def get_machine(database: sqlite3.Connection, machine_id: int = None, machine_na
 
             row = cur.fetchall()
             machine_id, machine_name, crafting_speed, module_slots, max_energy, idle_energy, energy_consumption_type, \
-            pollution = row[0]
+                pollution = row[0]
+
             return [{
                 "Machine_id": machine_id,
                 "Machine_Name": machine_name,
@@ -211,6 +212,7 @@ def get_machine(database: sqlite3.Connection, machine_id: int = None, machine_na
                 "Energy_Consumption_Type": energy_consumption_type,
                 "Pollution": pollution
             }]
+
         except Error as e:
             print(e)
         except ValueError as e:
@@ -231,7 +233,8 @@ def get_machine(database: sqlite3.Connection, machine_id: int = None, machine_na
 
         for row in rows:
             machine_id, machine_name, crafting_speed, module_slots, max_energy, idle_energy, energy_consumption_type, \
-            pollution = row
+                pollution = row
+
             machines.append({
                 "Machine_id": machine_id,
                 "Machine_Name": machine_name,
@@ -242,6 +245,7 @@ def get_machine(database: sqlite3.Connection, machine_id: int = None, machine_na
                 "Energy_Consumption_Type": energy_consumption_type,
                 "Pollution": pollution
             })
+
         return machines
 
 
@@ -318,7 +322,7 @@ def update_machine(database: sqlite3.Connection, machine_id: int = None, machine
             },
         ])
     # endregion
-    
+
     # First, assign machine the output of get_machine, then check it's length
     if len(machine := get_machine(database, machine_id=machine_id, machine_name=machine_name)) > 1:
         if prompt_user_on_multiple_match:
@@ -329,7 +333,7 @@ def update_machine(database: sqlite3.Connection, machine_id: int = None, machine
                     ([item["Machine_Name"] for item in machine]) or ["Exit", "Stop", "Quit"])):
                 for item in machine:
                     print(item)
-            
+
             for item in machine:
                 if item["Machine_Name"] == machine_wanted:
                     machine_wanted = item
@@ -341,8 +345,8 @@ def update_machine(database: sqlite3.Connection, machine_id: int = None, machine
         # output of get_machine.
         machine_wanted = machine[0]
 
-    # else:
-    #     machine_wanted = None
+    else:
+        machine_wanted = None
 
     if machine_wanted is not None and new_values != {}:
         for key in new_values.keys():
@@ -514,7 +518,8 @@ def add_recipe(database: sqlite3.Connection, recipe_requirements: List[Dict[str,
     """
 
     try:
-        database.cursor().execute(sql, (str(recipe_requirements), str(recipe_products), float(craft_time), str(machines), str(modules)))
+        database.cursor().execute(sql, (str(recipe_requirements), str(recipe_products), float(craft_time),
+                                        str(machines), str(modules)))
         database.commit()
     except Error as e:
         print(e)
@@ -576,12 +581,12 @@ def get_recipe(database: sqlite3.Connection, recipe_id: int = None, recipe_produ
             recipe_id, recipe_items, recipe_products, recipe_craft_time, recipe_machines, recipe_modules = recipe
 
             # TODO convert recipe_items, Recipe_products, Recipe_Machines into lists.
-            
+
             recipe_items = _convert_str_to_dict_list(recipe_items)
             recipe_products = _convert_str_to_dict_list(recipe_products)
             recipe_machines = _convert_str_to_list(recipe_machines)
             recipe_modules = _convert_str_to_list(recipe_modules)
-            
+
             return [{
                 "Recipe_id": recipe_id,
                 "Recipe_Items": recipe_items,
@@ -627,7 +632,6 @@ def get_recipe(database: sqlite3.Connection, recipe_id: int = None, recipe_produ
                 recipe_product = _convert_str_to_list(recipe_product)
 
                 if item_name in recipe_product:
-
                     # Convert the items, machines and modules to lists.
                     recipe_items = _convert_str_to_list(recipe_items)
                     recipe_machines = _convert_str_to_list(recipe_machines)
@@ -653,10 +657,12 @@ def get_all_recipes(database: sqlite3.Connection) -> Dict[str, str]:
     :param database: Connection object; The database.
     :return: Dict[str, ]
     """
+
+
 # endregion
 
 # region Items
-def create_item_table(database : sqlite3.Connection, override_existing: bool = False):
+def create_item_table(database: sqlite3.Connection, override_existing: bool = False):
     """
     Creates a new table inside a database for items.
     
@@ -677,11 +683,11 @@ def create_item_table(database : sqlite3.Connection, override_existing: bool = F
             "Type": bool
         }
     ])
-    
+
     if override_existing:
         database.cursor().execute("DROP TABLE Items")
         database.commit()
-    
+
     sql = """
     CREATE TABLE Items (
         Item_ID
@@ -702,13 +708,13 @@ def create_item_table(database : sqlite3.Connection, override_existing: bool = F
     database.commit()
 
 
-def add_item(database: sqlite3.Connection, item_name: str, item_energy_value_KW: float = 0.0):
+def add_item(database: sqlite3.Connection, item_name: str, item_energy_value_kw: float = 0.0):
     """
     Adds an item to the database.
     
     :param database: Connection object; The database to add the item to.
     :param item_name: str; The name of the item.
-    :param item_energy_value_KW: float; The amount of energy the item provides when burnt. Defaults to 0.0.
+    :param item_energy_value_kw: float; The amount of energy the item provides when burnt. Defaults to 0.0.
     
     :return:
     """
@@ -720,11 +726,11 @@ def add_item(database: sqlite3.Connection, item_name: str, item_energy_value_KW:
         },
         {
             "Argument Name": "item_energy_value_KW",
-            "Value Supplied": item_energy_value_KW,
+            "Value Supplied": item_energy_value_kw,
             "Type": float
         }
     ])
-    
+
     sql = """
     INSERT INTO Items(
         Item_Name,
@@ -733,7 +739,7 @@ def add_item(database: sqlite3.Connection, item_name: str, item_energy_value_KW:
     Values(?,?)
     """
     try:
-        database.cursor().execute(sql, (item_name, item_energy_value_KW))
+        database.cursor().execute(sql, (item_name, item_energy_value_kw))
         database.commit()
     except Error as e:
         print(e)
@@ -759,7 +765,7 @@ def get_item(database: sqlite3.Connection, item_id: int = None, item_name: str =
             "Type": sqlite3.Connection
         }
     ])
-    
+
     if item_id is not None:
         _check_types([
             {
@@ -768,7 +774,7 @@ def get_item(database: sqlite3.Connection, item_id: int = None, item_name: str =
                 "Type": int
             }
         ])
-    
+
     if item_name is not None:
         _check_types([
             {
@@ -778,7 +784,7 @@ def get_item(database: sqlite3.Connection, item_id: int = None, item_name: str =
             }
         ])
     # endregion
-    
+
     if item_id is not None:
         try:
             sql = f"""
@@ -788,32 +794,32 @@ def get_item(database: sqlite3.Connection, item_id: int = None, item_name: str =
             """
             cur = database.cursor()
             cur.execute(sql)
-            
+
             row = cur.fetchall()
             item_id, item_name, item_energy_value = row[0]
             return [{
                 "Item_id": item_id,
                 "Item_Name": item_name,
-                "Item_Energy_Value": item_energy_value    
+                "Item_Energy_Value": item_energy_value
             }]
         except Error as e:
             print(e)
         except ValueError as e:
             print(e)
-    
+
     if item_name is not None:
         sql = f"""
         SELECT *
         FROM Items
         WHERE Item_Name LIKE "%{item_name}%"
         """
-        
+
         cur = database.cursor()
         cur.execute(sql)
-        
+
         rows = cur.fetchall()
         items = []
-        
+
         for row in rows:
             item_id, item_name, item_energy_value = row
             items.append({
@@ -839,11 +845,105 @@ def get_all_items(database: sqlite3.Connection) -> List[Tuple[str or int or floa
             "Type": sqlite3.Connection
         }
     ])
-    
+
     cur = database.cursor()
     cur.execute("SELECT * FROM Items")
     return cur.fetchall()
+
+
+def update_item(database: sqlite3.Connection, item_id: int = None, item_name: str = None,
+                prompt_user_on_multiple_match: bool = True, **new_values: Dict[str, str or int or float]):
+    """
+    Updates an items information.
+    
+    :param database: Connection object; The database the item is in.
+    :param item_id: int; The id of the item if known. Defaults to None.
+    :param item_name: str; The name of the item if known. Defaults to None.
+    :param prompt_user_on_multiple_match: bool; Whether or not to prompt the users to input the item they want if
+    multiple items with the same name exists. Defaults to True.
+    
+    :return: 
+    """
+    # region Type Checks
+    _check_types([
+        {
+            "Argument Name": "database",
+            "Value Supplied": database,
+            "Type": sqlite3.Connection
+        },
+        {
+            "Argument name": "prompt_user_on_multiple_match",
+            "Value Supplied": prompt_user_on_multiple_match,
+            "Type": bool
+        },
+        {
+            "Argument Name": "new_values",
+            "Value Supplied": new_values,
+            "Type": dict
+        }
+    ])
+
+    if item_id is not None:
+        _check_types([
+            {
+                "Argument Name": "item_id",
+                "Value Supplied": item_id,
+                "Type": int
+            }
+        ])
+    if item_name is not None:
+        _check_types([
+            {
+                "Argument Name": "item_name",
+                "Value Supplied": item_name,
+                "Type": str
+            }
+        ])
+    # endregion
+
+    # First, assign item as the output of get_item, then check its length.
+    if len(item := get_item(database, item_id=item_id, item_name=item_name)) > 1:
+        if prompt_user_on_multiple_match:
+            for items in item:
+                print(items)
+
+            # First, assign item_wanted to the input of the user, then check if it is in any of the items or stopping
+            # the loop.
+            while ((item_wanted := input("Please put the name of the item you want to edit: ")) not in (
+                    ([items["Machine_Name"] for items in item]) or ["Exit", "Stop", "Quit"])):
+                for items in item:
+                    print(items)
+
+            for items in item:
+                if items["Item_Name"] == item_wanted:
+                    item_wanted = items
+
+        else:
+            item_wanted = item[0]
+
+    elif len(item) == 1:
+        item_wanted = item[0]
+
+    else:
+        item_wanted = None
+
+    if item_wanted is not None and new_values != {}:
+        for key in new_values.keys():
+            if key in item_wanted.keys():
+                item_wanted[key] = new_values[key]
+
+        sql = """
+        UPDATE Items
+        SET Item_Name = ?,
+            Item_Energy_Value_KW = ?
+        Where Item_ID = ?
+        """
+        database.cursor().execute(sql, (item_wanted["Item_Name"],
+                                        item_wanted["Item_Energy_Value"],
+                                        item_wanted["Item_id"]))
+        database.commit()
 # endregion
+
 
 def _create_connection(file: str) -> sqlite3.Connection or None:
     """
@@ -855,7 +955,7 @@ def _create_connection(file: str) -> sqlite3.Connection or None:
     try:
         return sqlite3.connect(file)
 
-    except Error as e:
+    except Error:
         return None
 
 
@@ -892,28 +992,27 @@ def _convert_str_to_dict_list(string: str) -> List[Dict]:
     """
     Converts a str to a list of dicts.
     
-    :param str: str; The string to be converted.
+    :param string: str; The string to be converted.
     
     :return: List[Dict]
     """
     converted = []
-    
+
     string = string[1: len(string) - 1].split("}")
     string.pop()
 
-    
     for x in range(len(string)):
         converted.append({})
-        
+
         string[x] = string[x].strip()
         components = string[x].split(",")
-        
+
         for y in range(len(components)):
             key, value = components[y].strip().split(":")
-            
+
             key = key.strip().strip("{").strip("'")
             value = value.strip().strip("'")
-            
+
             converted[x][key] = value
-    
+
     return converted
