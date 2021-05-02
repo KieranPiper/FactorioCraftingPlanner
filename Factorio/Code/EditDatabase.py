@@ -378,7 +378,6 @@ def update_machine(database: sqlite3.Connection, machine_id: int = None, machine
 
 # endregion
 
-
 # region Recipes
 def create_recipe_table(database: sqlite3.Connection, override_existing: bool = False):
     """
@@ -753,7 +752,7 @@ def get_item(database: sqlite3.Connection, item_id: int = None, item_name: str =
     
     :param database: Connection Object; The database to search in.
     :param item_id: int; The ID of the item if known. Defaults to None.
-    :param item_name: str; The name of the machine if known. Defaults to None.
+    :param item_name: str; The name of the item if known. Defaults to None.
     
     :return: Dict[str, str or float]
     """
@@ -910,7 +909,7 @@ def update_item(database: sqlite3.Connection, item_id: int = None, item_name: st
             # First, assign item_wanted to the input of the user, then check if it is in any of the items or stopping
             # the loop.
             while ((item_wanted := input("Please put the name of the item you want to edit: ")) not in (
-                    ([items["Machine_Name"] for items in item]) or ["Exit", "Stop", "Quit"])):
+                    ([items["Item_Name"] for items in item]) or ["Exit", "Stop", "Quit"])):
                 for items in item:
                     print(items)
 
@@ -944,6 +943,286 @@ def update_item(database: sqlite3.Connection, item_id: int = None, item_name: st
         database.commit()
 # endregion
 
+# region Liquids
+def create_liquid_table(database: sqlite3.Connection, override_existing: bool = False):
+    """
+    Creates a new table inside a database for liquids.
+    
+    :param database: Connection Object; The database to add the table to.
+    :param override_existing: bool; Whether or not to override an existing table. Defaults to False.
+    
+    :returns:
+    """
+    _check_types([
+        {
+            "Argument Name": "database",
+            "Value Supplied": database,
+            "Type": sqlite3.Connection
+        },
+        {
+            "Argument Name": "override_existing",
+            "Value Supplied": override_existing,
+            "Type": bool
+        }
+    ])
+
+    if override_existing:
+        database.cursor().execute("DROP TABLE Liquids")
+        database.commit()
+
+    sql = """
+    CREATE TABLE IF NOT EXISTS Liquids (
+        Liquid_ID
+            INTEGER
+            PRIMARY KEY,
+        Liquid_Name            
+            TEXT
+            NOT NULL,
+        Liquid_Temperature
+            REAL    
+            NOT NULL
+            DEFAULT (15.0) 
+    );
+    """
+    database.cursor().execute(sql)
+    database.commit()
+
+
+def add_liquid(database: sqlite3.Connection, liquid_name: str, liquid_temperature: float = 0.0):
+    """
+    Adds an liquid to the database.
+    
+    :param database: Connection object; The database to add the item to.
+    :param item_name: str; The name of the liquid.
+    :param liquid_temperature: float; The temperature of the liquid. Defaults to 15.0.
+    
+    :return:
+    """
+    _check_types([
+        {
+            "Argument Name": "liquid_name",
+            "Value Supplied": liquid_name,
+            "Type": str
+        },
+        {
+            "Argument Name": "liquid_temperature",
+            "Value Supplied": liquid_temperature,
+            "Type": float
+        }
+    ])
+
+    sql = """
+    INSERT INTO Liquids(
+        Liquid_Name,
+        Liquid_Temperature
+        )
+    Values(?,?)
+    """
+    try:
+        database.cursor().execute(sql, (liquid_name, liquid_temperature))
+        database.commit()
+    except Error as e:
+        print(e)
+    except IntegrityError as e:
+        print(e)
+
+
+def get_liquid(database: sqlite3.Connection, liquid_id: int = None, liquid_name: str = None) -> List[Dict[str, str or float]]:
+    """
+    Gets an liquid.
+    
+    :param database: Connection Object; The database to search in.
+    :param liquid_id: int; The ID of the liquid if known. Defaults to None.
+    :param liquid_name: str; The name of the liquid if known. Defaults to None.
+    
+    :return: Dict[str, str or float]
+    """
+    # region Check Types
+    _check_types([
+        {
+            "Argument Name": "database",
+            "Value Supplied": database,
+            "Type": sqlite3.Connection
+        }
+    ])
+
+    if liquid_id is not None:
+        _check_types([
+            {
+                "Argument Name": "liquid_id",
+                "Value Supplied": liquid_id,
+                "Type": int
+            }
+        ])
+
+    if liquid_name is not None:
+        _check_types([
+            {
+                "Argument Name": "liquid_name",
+                "Value Supplied": liquid_name,
+                "Type": str
+            }
+        ])
+    # endregion
+
+    if liquid_id is not None:
+        try:
+            sql = f"""
+            SELECT *
+            FROM Liquids
+            WHERE Liquid_ID={liquid_id}
+            """
+            cur = database.cursor()
+            cur.execute(sql)
+
+            row = cur.fetchall()
+            liquid_id, liquid_name, liquid_temperature = row[0]
+            return [{
+                "Liquid_id": liquid_id,
+                "Liquid_Name": liquid_name,
+                "Liquid_Temperature": liquid_temperature
+            }]
+        except Error as e:
+            print(e)
+        except ValueError as e:
+            print(e)
+
+    if liquid_name is not None:
+        sql = f"""
+        SELECT *
+        FROM Liquids
+        WHERE Liquid_Name LIKE "%{liquid_name}%"
+        """
+
+        cur = database.cursor()
+        cur.execute(sql)
+
+        rows = cur.fetchall()
+        liquids = []
+
+        for row in rows:
+            liquid_id, liquid_name, liquid_temperature = row
+            liquids.append({
+                "Liquid_id": liquid_id,
+                "Liquid_Name": liquid_name,
+                "Liquid_Temperature": liquid_temperature
+            })
+        return liquids
+
+
+def get_all_liquids(database: sqlite3.Connection) -> List[Tuple[str or int or float]]:
+    """
+    Gets all liquids from a database.
+    
+    :param database: Connection Object; The database to get all the liquids from.
+    
+    :return: List[Tuple[str or int or float]]
+    """
+    _check_types([
+        {
+            "Argument Name": "database",
+            "Value Supplied": database,
+            "Type": sqlite3.Connection
+        }
+    ])
+
+    cur = database.cursor()
+    cur.execute("SELECT * FROM Liquids")
+    return cur.fetchall()
+
+
+def update_liquid(database: sqlite3.Connection, liquid_id: int = None, liquid_name: str = None,
+                prompt_user_on_multiple_match: bool = True, **new_values: Dict[str, str or int or float]):
+    """
+    Updates an liquids information.
+    
+    :param database: Connection object; The database the liquid is in.
+    :param liquid_id: int; The id of the liquid if known. Defaults to None.
+    :param liquid_name: str; The name of the liquid if known. Defaults to None.
+    :param prompt_user_on_multiple_match: bool; Whether or not to prompt the users to input the liquid they want if
+    multiple liquid with the same name exists. Defaults to True.
+    
+    :return: 
+    """
+    # region Type Checks
+    _check_types([
+        {
+            "Argument Name": "database",
+            "Value Supplied": database,
+            "Type": sqlite3.Connection
+        },
+        {
+            "Argument name": "prompt_user_on_multiple_match",
+            "Value Supplied": prompt_user_on_multiple_match,
+            "Type": bool
+        },
+        {
+            "Argument Name": "new_values",
+            "Value Supplied": new_values,
+            "Type": dict
+        }
+    ])
+
+    if liquid_id is not None:
+        _check_types([
+            {
+                "Argument Name": "liquid_id",
+                "Value Supplied": liquid_id,
+                "Type": int
+            }
+        ])
+    if liquid_name is not None:
+        _check_types([
+            {
+                "Argument Name": "liquid_name",
+                "Value Supplied": liquid_name,
+                "Type": str
+            }
+        ])
+    # endregion
+
+    # First, assign liquid as the output of get_liquid, then check its length.
+    if len(liquid := get_liquid(database, liquid_id=liquid_id, liquid_name=liquid_name)) > 1:
+        if prompt_user_on_multiple_match:
+            for liquids in liquid:
+                print(liquid)
+
+            # First, assign liquid_wanted to the input of the user, then check if it is in any of the liquids or stopping
+            # the loop.
+            while ((liquid_wanted := input("Please put the name of the liquid you want to edit: ")) not in (
+                    ([liquids["Liquid_Name"] for liquids in liquid]) or ["Exit", "Stop", "Quit"])):
+                for liquids in liquid:
+                    print(liquid)
+
+            for liquids in liquid:
+                if liquids["Liquid_Name"] == liquid_wanted:
+                    liquid_wanted = liquid
+
+        else:
+            liquid_wanted = liquid[0]
+
+    elif len(liquid) == 1:
+        liquid_wanted = liquid[0]
+
+    else:
+        liquid_wanted = None
+
+    if liquid_wanted is not None and new_values != {}:
+        for key in new_values.keys():
+            if key in liquid_wanted.keys():
+                liquid_wanted[key] = new_values[key]
+
+        sql = """
+        UPDATE Liquids
+        SET Liquid_Name = ?,
+            Liquid_Temperature = ?
+        Where Liquid_ID = ?
+        """
+        database.cursor().execute(sql, (liquid_wanted["Liquid_Name"],
+                                        liquid_wanted["Liquid_Temperature"],
+                                        liquid_wanted["Liquid_id"]))
+        database.commit()
+# endregion
 
 def _create_connection(file: str) -> sqlite3.Connection or None:
     """
