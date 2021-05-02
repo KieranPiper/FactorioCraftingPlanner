@@ -38,4 +38,8 @@ if __name__ == "__main__":
     #
     
     # test.get_all_recipes(database)
+    
+    test.add_item(database, item_name="Radar", item_energy_value_kw=000.0)
+    # test.update_item(database, item_name="Powerr Armor", Item_Name="Power Armor")
+    print(test.get_all_items(database))
  
